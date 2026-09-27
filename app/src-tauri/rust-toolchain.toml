@@ -1,0 +1,5 @@
+# 钉死工具链版本：任何机器上 `cargo` 自动读取此文件并安装/切换到该版本
+# 目的：Windows AI、未来协作者、CI 全部与开发基线一致，消除"版本漂移导致的差异"
+[toolchain]
+channel = "1.94.1"
+profile = "minimal"

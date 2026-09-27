@@ -1,0 +1,33 @@
+{
+  "name": "clue-workbench-desktop",
+  "private": true,
+  "version": "0.7.15",
+  "type": "module",
+  "dependencies": {
+    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/plugin-clipboard-manager": "2.3.3",
+    "@tauri-apps/plugin-dialog": "2.7.3",
+    "@tauri-apps/plugin-fs": "2.5.2",
+    "@tauri-apps/plugin-opener": "2.5.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "xlsx": "0.18.5",
+    "xmind": "^2.2.33"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.10.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "6.1.1",
+    "typescript": "5.7.3",
+    "vite": "8.2.2",
+    "vitest": "3.2.4"
+  },
+  "scripts": {
+    "dev": "vite",
+    "prepare:xmind": "node scripts/prepare-xmind.mjs",
+    "build": "npm run prepare:xmind && tsc --noEmit && vite build",
+    "test": "vitest run",
+    "tauri": "tauri"
+  }
+}

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2200" viewBox="0 0 1600 2200" role="img" aria-labelledby="title desc">
+  <title id="title">线索研判简要操作手册</title>
+  <desc id="desc">本地优先案件关系工作台的六步操作海报</desc>
+  <defs>
+    <style>
+      .title{font:700 76px -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;fill:#1e2a31;letter-spacing:-2px}.subtitle{font:400 29px -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;fill:#6d7b80}.section{font:700 25px -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;fill:#67767a;letter-spacing:4px}.num{font:700 28px -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;fill:#fff}.cardTitle{font:700 38px -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;fill:#24343a}.body{font:400 28px -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;fill:#5c6d72}.note{font:500 24px -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;fill:#40735c}.footer{font:400 24px -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;fill:#718086}.tiny{font:500 22px -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;fill:#53646a}.kbd{font:600 22px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#35515c}
+    </style>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#243b43" flood-opacity=".10"/></filter>
+  </defs>
+  <rect width="1600" height="2200" fill="#f4f5f2"/>
+  <path d="M0 0H1600V315C1320 252 1090 390 803 316C515 241 302 364 0 290Z" fill="#e5f0ee"/>
+  <g transform="translate(105 106)">
+    <rect x="0" y="0" width="74" height="74" rx="22" fill="#1e4656"/>
+    <circle cx="25" cy="39" r="7" fill="#dceff2"/><circle cx="48" cy="25" r="7" fill="#dceff2"/><circle cx="50" cy="53" r="7" fill="#dceff2"/>
+    <path d="M30 36L43 28M30 42L45 50" stroke="#dceff2" stroke-width="4" stroke-linecap="round"/>
+    <text x="98" y="34" class="section">本地优先 · 线索关系工作台</text>
+    <text x="0" y="158" class="title">线索研判 · 简要操作手册</text>
+    <text x="0" y="210" class="subtitle">把已查到的结果快速录入，自动形成调查路径、关系网与案件材料。</text>
+  </g>
+
+  <g transform="translate(105 400)" filter="url(#shadow)">
+    <rect width="1390" height="250" rx="26" fill="#203a45"/>
+    <text x="52" y="71" class="section" fill="#b9d8d1">核心原则</text>
+    <text x="52" y="132" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif" font-size="36" font-weight="700" fill="#fff">一案一工作区 · 手工录入已知事实 · 系统不自动查询或猜测</text>
+    <text x="52" y="191" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif" font-size="27" fill="#d3e1df">案件默认保存在本机；同一条线索可继续向外添加关联，不需要维护复杂表格。</text>
+  </g>
+
+  <g transform="translate(105 720)">
+    <g filter="url(#shadow)"><rect width="675" height="338" rx="24" fill="#fff"/><circle cx="58" cy="58" r="29" fill="#1f5877"/><text x="49" y="68" class="num">1</text><text x="108" y="68" class="cardTitle">新建案件</text><text x="48" y="124" class="body">左侧点击「＋ 新建」</text><text x="48" y="167" class="body">填写案件名称与第一条线索</text><text x="48" y="210" class="body">系统会识别常见账号 / 手机 / IP 类型</text><rect x="48" y="252" width="252" height="48" rx="12" fill="#e5f0ee"/><text x="68" y="285" class="note">只需两项，就能开始</text></g>
+    <g transform="translate(715 0)" filter="url(#shadow)"><rect width="675" height="338" rx="24" fill="#fff"/><circle cx="58" cy="58" r="29" fill="#2e8b57"/><text x="49" y="68" class="num">2</text><text x="108" y="68" class="cardTitle">一键添加关联</text><text x="48" y="124" class="body">在图中点选一个对象</text><text x="48" y="167" class="body">右侧直接选择：QQ、微信、手机、IP、</text><text x="48" y="210" class="body">设备、群聊、位置、机房、平台账号等</text><rect x="48" y="252" width="356" height="48" rx="12" fill="#e9f6ee"/><text x="68" y="285" class="note">点一种类型 → 直接输入</text></g>
+  </g>
+
+  <g transform="translate(105 1100)">
+    <g filter="url(#shadow)"><rect width="675" height="338" rx="24" fill="#fff"/><circle cx="58" cy="58" r="29" fill="#a8722d"/><text x="49" y="68" class="num">3</text><text x="108" y="68" class="cardTitle">粘贴或批量导入</text><text x="48" y="124" class="body">输入框可一次粘贴多条结果</text><text x="48" y="167" class="body">每行、Tab、逗号均可分隔</text><text x="48" y="210" class="body">「批量导入」支持 Excel、CSV 与图片 OCR</text><rect x="48" y="252" width="400" height="48" rx="12" fill="#fff4e3"/><text x="68" y="285" class="note">预览确认后才写入案件</text></g>
+    <g transform="translate(715 0)" filter="url(#shadow)"><rect width="675" height="338" rx="24" fill="#fff"/><circle cx="58" cy="58" r="29" fill="#6955a7"/><text x="49" y="68" class="num">4</text><text x="108" y="68" class="cardTitle">阅读关系与标注</text><text x="48" y="124" class="body">中间可切换：调查路径 / 主体关系网 / 表格</text><text x="48" y="167" class="body">单击节点或关系，查看局部高亮</text><text x="48" y="210" class="body">右键编辑；可标重点、待核实、已失效、排除</text><rect x="48" y="252" width="360" height="48" rx="12" fill="#eeeafd"/><text x="68" y="285" class="note">大分支自动聚合，按需展开</text></g>
+  </g>
+
+  <g transform="translate(105 1480)">
+    <g filter="url(#shadow)"><rect width="675" height="338" rx="24" fill="#fff"/><circle cx="58" cy="58" r="29" fill="#2b7f83"/><text x="49" y="68" class="num">5</text><text x="108" y="68" class="cardTitle">保存、撤销与归档</text><text x="48" y="124" class="body">每次操作自动写入本机案件库</text><text x="48" y="167" class="body">顶部可撤销 / 重做；删除对象也可撤销</text><text x="48" y="210" class="body">左侧归档文件夹可收起、恢复与分类</text><rect x="48" y="252" width="332" height="48" rx="12" fill="#e8f4f4"/><text x="68" y="285" class="note">案件不会自动上传网络</text></g>
+    <g transform="translate(715 0)" filter="url(#shadow)"><rect width="675" height="338" rx="24" fill="#fff"/><circle cx="58" cy="58" r="29" fill="#a64d70"/><text x="49" y="68" class="num">6</text><text x="108" y="68" class="cardTitle">导出与在另一台电脑打开</text><text x="48" y="124" class="body">选择位置生成统一案件材料文件夹</text><text x="48" y="167" class="body">内含案件包、简报、关系图 SVG、全量 CSV</text><text x="48" y="210" class="body">另一台电脑点击「打开案件包」即可导入新案件</text><rect x="48" y="252" width="388" height="48" rx="12" fill="#f9eaf0"/><text x="68" y="285" class="note">导入不会覆盖已有案件</text></g>
+  </g>
+
+  <g transform="translate(105 1884)">
+    <rect width="1390" height="180" rx="22" fill="#e9eeeb"/>
+    <text x="44" y="56" class="cardTitle" font-size="31">常用提示</text>
+    <rect x="44" y="82" width="244" height="54" rx="11" fill="#fff"/><text x="66" y="117" class="kbd">A  添加关联</text>
+    <rect x="308" y="82" width="244" height="54" rx="11" fill="#fff"/><text x="330" y="117" class="kbd">E  编辑对象</text>
+    <rect x="572" y="82" width="330" height="54" rx="11" fill="#fff"/><text x="594" y="117" class="kbd">⌥ + 拖动  微调节点</text>
+    <text x="930" y="116" class="tiny">普通点击节点只用于选中与查看高亮</text>
+  </g>
+  <text x="105" y="2145" class="footer">线索研判 · 本地优先案件关系工作台｜数据默认保存在本机，可通过案件包进行可控迁移</text>
+</svg>

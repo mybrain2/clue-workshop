@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "clue-workbench": {
+      "command": "/Users/chrishong/.workbuddy/binaries/python/versions/3.13.12/bin/python3",
+      "args": [
+        "/Users/chrishong/WorkBuddy/2026-09-01-15-12-28/app/integrations/mcp/clue_workbench_mcp.py"
+      ],
+      "env": {
+        "CLUE_WORKBENCH_CLI": "/Users/chrishong/WorkBuddy/2026-09-01-15-12-28/app/src-tauri/target/release/clue-workbench-cli",
+        "CLUE_WORKBENCH_APP_PATH": "/Users/chrishong/WorkBuddy/2026-09-01-15-12-28/app/release/macOS/线索研判-0.4.1.app"
+      }
+    }
+  }
+}

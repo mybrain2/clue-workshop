@@ -1,0 +1,29 @@
+# ---- 系统垃圾 ----
+.DS_Store
+*.log
+
+# ---- WorkBuddy 会话产物（不入库）----
+.workbuddy/
+
+# ---- 项目真相中不适合版本库的大文件/产物 ----
+项目真相/*.sqlite3
+项目真相/*.zip
+项目真相/*.png
+
+# ---- node ----
+node_modules/
+
+# ---- 构建产物（注意：target 在 app/src-tauri/ 下，规则用 ** 通配任意层级）----
+dist/
+release/
+**/target/
+**/gen/schemas/
+**/resources/xmind/node
+**/resources/xmind/node.exe
+**/resources/xmind/node_modules/
+**/resources/xmind/package.json
+
+# ---- QA 截图 / 大图（历史证据存项目真相，不入源码库）----
+app/qa-*.png
+app/desktop-shell-preview.png
+app/线索研判_简要操作手册.png
