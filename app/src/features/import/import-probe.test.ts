@@ -17,7 +17,7 @@ const S = "【Success】成功";
 const groupRow = (n=1) => ["cipher","710000100","备注",S,"710000001","710000001","710000100","【10】普通成员","备注"+n,"测试群"+n,"https://a.example/1.jpg","公告","12","2026-01-01","2026-01-01","简介","id"+n];
 const friendRow = (qq="710000002") => ["cipher",qq,"备注",S,"710000001","我的好友","小明","https://a.example/2.jpg","老王","cipher2","id1"];
 const memberRow = () => ["710000100","710000010","710000010","无异常","err-code","cipherG","【1】正常","cipherQ","成员昵称","账号昵称","【0】普通成员","【false】否","id1"];
-const lookupRow = (phone="16650030502") => ["cipherP", "880000001","880000001","备注",S,"880000001",phone,"本人","2026-01-01","",""];
+const lookupRow = (phone="16600000001") => ["cipherP", "880000001","880000001","备注",S,"880000001",phone,"本人","2026-01-01","",""];
 const csv = (headers:string, rows:string[][]) => [headers.join(","), ...rows.map(r=>r.join(","))].join("\n");
 
 describe("维度1：解析器格式边界", () => {
@@ -92,7 +92,7 @@ describe("维度2：识别边界与互串", () => {
     expect(plan.canSubmit).toBe(true);
   });
   it("binding 与 lookup 表头高度相似仍能区分", () => {
-    const a = recognizeTemplate(csv(H.binding, [["880000001","16650030502","","x",S,"880000001","16650030502","本人","","",""]]));
+    const a = recognizeTemplate(csv(H.binding, [["880000001","16600000001","","x",S,"880000001","16600000001","本人","","",""]]));
     const b = recognizeTemplate(csv(H.lookup, [lookupRow()]));
     expect(a.template).toBe("qq-phone-binding");
     expect(b.template).toBe("qq-phone-lookup");
@@ -271,14 +271,14 @@ describe("维度5：手工映射建议边界", () => {
     expect(plan.canSubmit).toBe(false);
     expect(plan.batchErrors.join()).toContain("唯一");
   });
-  it("纯数字国际裸号11位（85212345678）→ 既是合法QQ长度又被QQ判定优先（记录歧义行为）", () => {
-    // 85212345678 是11位数字：isQq 命中(5-12位) → inferredKind 先试 qq → 全列判 qq。
-    // 只有带分隔符形态（852-9123 4567）才判 phone。这是可解释的保守行为：数字形态优先QQ。
-    const sug = suggestManualMapping("号码,号码\n85212345678,85287654321\n85212345678,85211112222");
+  it("纯数字国际裸号11位（85200000001）→ 既是合法QQ长度又被QQ判定优先（记录歧义行为）", () => {
+    // 85200000001 是11位数字：isQq 命中(5-12位) → inferredKind 先试 qq → 全列判 qq。
+    // 只有带分隔符形态（852-0000 0001）才判 phone。这是可解释的保守行为：数字形态优先QQ。
+    const sug = suggestManualMapping("号码,号码\n85200000001,85200000002\n85200000001,85200000003");
     expect(sug.targetKind).toBe("qq");
   });
   it("带分隔符国际号形态 → 正确判phone（回归保护）", () => {
-    const sug = suggestManualMapping("手机号码,备注\n852-9123 4567,x\n+1 (415) 555-1234,y");
+    const sug = suggestManualMapping("手机号码,备注\n852-0000 0001,x\n+1 (415) 555-0100,y");
     expect(sug.targetKind).toBe("phone");
   });
   it("手工映射桥接：起点不存在+当前选中 → bridge-available", () => {

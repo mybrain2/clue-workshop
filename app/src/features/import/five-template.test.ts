@@ -12,31 +12,31 @@ describe("修复①：好友列表密文查询起点回退解密列", () => {
 
   it("查询账号列全密文 → 回退到查询账号(解密)明文起点", () => {
     const text = mk([
-      ["2128667131", "687958", "", "", CIPHER, "我的好友", "小明", "https://q.qlogo.cn/1", "备注A", CIPHER, CIPHER],
-      ["2128667131", "1890702", "", "", CIPHER, "我的好友", "神话。", "https://q.qlogo.cn/2", "", CIPHER, CIPHER],
+      ["7112345678", "710200001", "", "", CIPHER, "我的好友", "小明", "https://q.qlogo.cn/1", "备注A", CIPHER, CIPHER],
+      ["7112345678", "710200002", "", "", CIPHER, "我的好友", "神话。", "https://q.qlogo.cn/2", "", CIPHER, CIPHER],
     ]);
     const plan = buildImportPlan(text, {});
     expect(plan.template).toBe("friend-list");
     expect(plan.canSubmit).toBe(true);
-    expect(plan.queryOrigin).toEqual({ kind: "qq", key: "2128667131" });
+    expect(plan.queryOrigin).toEqual({ kind: "qq", key: "7112345678" });
     expect(plan.relations).toHaveLength(2);
-    expect(plan.relations[0]).toMatchObject({ sourceKind: "qq", sourceKey: "2128667131", label: "好友", targetKind: "qq", targetKey: "687958" });
+    expect(plan.relations[0]).toMatchObject({ sourceKind: "qq", sourceKey: "7112345678", label: "好友", targetKind: "qq", targetKey: "710200001" });
   });
 
   it("查询账号列明文 → 不回退，直接使用（回归保护）", () => {
     const text = mk([
-      ["2128667131", "687958", "", "", "2128667131", "我的好友", "小明", "https://q.qlogo.cn/1", "", CIPHER, CIPHER],
-      ["2128667131", "1890702", "", "", "2128667131", "我的好友", "神话。", "https://q.qlogo.cn/2", "", CIPHER, CIPHER],
+      ["7112345678", "710200001", "", "", "7112345678", "我的好友", "小明", "https://q.qlogo.cn/1", "", CIPHER, CIPHER],
+      ["7112345678", "710200002", "", "", "7112345678", "我的好友", "神话。", "https://q.qlogo.cn/2", "", CIPHER, CIPHER],
     ]);
     const plan = buildImportPlan(text, {});
     expect(plan.canSubmit).toBe(true);
-    expect(plan.queryOrigin!.key).toBe("2128667131");
+    expect(plan.queryOrigin!.key).toBe("7112345678");
   });
 
   it("解密列也不唯一 → 明确报错不猜测", () => {
     const text = mk([
-      ["2128667131", "687958", "", "", CIPHER, "我的好友", "小明", "", "", CIPHER, CIPHER],
-      ["999888777", "1890702", "", "", CIPHER, "我的好友", "神话。", "", "", CIPHER, CIPHER],
+      ["7112345678", "710200001", "", "", CIPHER, "我的好友", "小明", "", "", CIPHER, CIPHER],
+      ["999888777", "710200002", "", "", CIPHER, "我的好友", "神话。", "", "", CIPHER, CIPHER],
     ]);
     const plan = buildImportPlan(text, {});
     expect(plan.canSubmit).toBe(false);
@@ -48,23 +48,23 @@ describe("修复②：手机号 86- 前缀规范化", () => {
   const lookupHeader = ["手机号(解密)", "QQ账号(解密)", "命中查询内容", "错误备注", "错误码类型", "QQ账号", "手机号", "手机号类型", "设置时间", "修改时间", "验证时间"];
   const mk = (rows: string[][]) => csv([lookupHeader, ...rows]);
 
-  it("86-16650030502 规范化为 16650030502 入库", () => {
+  it("86-16600000001 规范化为 16600000001 入库", () => {
     const text = mk([
-      ["86-16650030502", "2128667131", "2128667131", "", "【Success】成功", CIPHER, CIPHER, "【1】密保手机", "2016/01/26 10:09:48", "2026/05/06 17:35:59", "2026/09/15 23:18:53"],
+      ["86-16600000001", "7112345678", "7112345678", "", "【Success】成功", CIPHER, CIPHER, "【1】密保手机", "2016/01/26 10:09:48", "2026/05/06 17:35:59", "2026/09/15 23:18:53"],
     ]);
     const plan = buildImportPlan(text, {});
     expect(plan.template).toBe("qq-phone-lookup");
     expect(plan.canSubmit).toBe(true);
-    expect(plan.relations[0]).toMatchObject({ sourceKind: "qq", sourceKey: "2128667131", label: "绑定手机号", targetKind: "phone", targetKey: "16650030502" });
+    expect(plan.relations[0]).toMatchObject({ sourceKind: "qq", sourceKey: "7112345678", label: "绑定手机号", targetKind: "phone", targetKey: "16600000001" });
   });
 
   it("裸11位手机号回归保护（不误伤）", () => {
     const text = mk([
-      ["16650030502", "2128667131", "2128667131", "", "【Success】成功", CIPHER, CIPHER, "【1】密保手机", "2016/01/26 10:09:48", "", ""],
+      ["16600000001", "7112345678", "7112345678", "", "【Success】成功", CIPHER, CIPHER, "【1】密保手机", "2016/01/26 10:09:48", "", ""],
     ]);
     const plan = buildImportPlan(text, {});
     expect(plan.canSubmit).toBe(true);
-    expect(plan.relations[0].targetKey).toBe("16650030502");
+    expect(plan.relations[0].targetKey).toBe("16600000001");
   });
 });
 
@@ -104,17 +104,17 @@ describe("新模板④：QQ查手机号表 qq-phone-lookup 与绑定表区分", 
   const bindingHeader = ["QQ账号(解密)", "命中查询内容", "错误备注", "错误码类型", "QQ账号", "手机号", "手机号类型", "设置时间", "修改时间", "验证时间"];
 
   it("两模板表头不同 → 各自识别不混淆", () => {
-    const lookup = csv([lookupHeader, ["16650030502", "2128667131", "2128667131", "", "【Success】成功", CIPHER, CIPHER, "【1】密保手机", "", "", ""]]);
-    const binding = csv([bindingHeader, ["166864075", "16650030502", "", "【Success】成功", CIPHER, CIPHER, "【1】密保手机", "", "", ""]]);
+    const lookup = csv([lookupHeader, ["16600000001", "7112345678", "7112345678", "", "【Success】成功", CIPHER, CIPHER, "【1】密保手机", "", "", ""]]);
+    const binding = csv([bindingHeader, ["710300001", "16600000001", "", "【Success】成功", CIPHER, CIPHER, "【1】密保手机", "", "", ""]]);
     expect(recognizeTemplate(lookup).template).toBe("qq-phone-lookup");
     expect(recognizeTemplate(binding).template).toBe("qq-phone-binding");
     // 方向合同 v2：全部模板统一"查询起点 → 结果"。lookup 起点 QQ → 手机号；binding 起点手机号 → QQ
     const lp = buildImportPlan(lookup, {}), bp = buildImportPlan(binding, {});
-    expect(lp.relations[0]).toMatchObject({ sourceKind: "qq", sourceKey: "2128667131", targetKind: "phone", targetKey: "16650030502" });
-    expect(bp.relations[0]).toMatchObject({ sourceKind: "phone", sourceKey: "16650030502", targetKind: "qq", targetKey: "166864075" });
+    expect(lp.relations[0]).toMatchObject({ sourceKind: "qq", sourceKey: "7112345678", targetKind: "phone", targetKey: "16600000001" });
+    expect(bp.relations[0]).toMatchObject({ sourceKind: "phone", sourceKey: "16600000001", targetKind: "qq", targetKey: "710300001" });
     // 起点不同：lookup起点是QQ，binding起点是手机号
-    expect(lp.queryOrigin).toEqual({ kind: "qq", key: "2128667131" });
-    expect(bp.queryOrigin).toEqual({ kind: "phone", key: "16650030502" });
+    expect(lp.queryOrigin).toEqual({ kind: "qq", key: "7112345678" });
+    expect(bp.queryOrigin).toEqual({ kind: "phone", key: "16600000001" });
   });
 });
 
@@ -125,7 +125,7 @@ describe("诊断与手工映射优化", () => {
   it("行校验失败时错误信息包含具体列名与期望", () => {
     // 头像列放非URL内容 → 诊断应点名「头像」列
     const text = mk([
-      ["2128667131", "687958", "", "", "2128667131", "我的好友", "小明", "不是网址", "", CIPHER, CIPHER],
+      ["7112345678", "710200001", "", "", "7112345678", "我的好友", "小明", "不是网址", "", CIPHER, CIPHER],
     ]);
     const plan = buildImportPlan(text, {});
     expect(plan.canSubmit).toBe(false);
@@ -137,20 +137,20 @@ describe("诊断与手工映射优化", () => {
   it("手工映射手机号兼容86-前缀并规范化入库", () => {
     const text = csv([
       ["QQ", "手机"],
-      ["2128667131", "86-16650030502"],
+      ["7112345678", "86-16600000001"],
     ]);
     const plan = buildManualMappedPlan(text, {
       hasHeader: true, sourceIndex: 0, sourceKind: "qq", targetIndex: 1, targetKind: "phone",
       relationLabel: "绑定",
     }, {});
     expect(plan.canSubmit).toBe(true);
-    expect(plan.relations[0].targetKey).toBe("16650030502");
+    expect(plan.relations[0].targetKey).toBe("16600000001");
   });
 });
 
 describe("模板总数与既有合同回归", () => {
   it("旧四模板无表头位置合同仍然有效", () => {
-    const noHeaderGroup = [["", "332621944", "", "【Success】成功", "2128667131", "2128667131", "", "【10】普通成员", "", "迈", "https://p.qlogo.cn/1", "", "15", "2022/10/07 14:27:12", "2018/03/31 10:17:23", "专为篮球", CIPHER]];
+    const noHeaderGroup = [["", "332621944", "", "【Success】成功", "7112345678", "7112345678", "", "【10】普通成员", "", "迈", "https://p.qlogo.cn/1", "", "15", "2022/10/07 14:27:12", "2018/03/31 10:17:23", "专为篮球", CIPHER]];
     const rec = recognizeTemplate(noHeaderGroup, { hasHeader: false });
     expect(rec.template).toBe("group-list");
   });

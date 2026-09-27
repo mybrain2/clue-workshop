@@ -103,16 +103,16 @@ fn group_member_template_rebuilds() {
 #[test]
 fn phone_lookup_normalizes_86_prefix() {
     let plan = canonical_plan("qq-phone-lookup", LOOKUP, vec![
-        row(&["86-16650030502","2128667131","2128667131","","【Success】成功","cipher-qq","cipher-phone","【1】密保手机","2016/01/26 10:09:48","",""]),
+        row(&["86-16600000001","7112345678","7112345678","","【Success】成功","cipher-qq","cipher-phone","【1】密保手机","2016/01/26 10:09:48","",""]),
     ]);
     assert_eq!(plan.query_origin.as_ref().unwrap().kind, "qq");
-    assert_eq!(plan.query_origin.as_ref().unwrap().key, "2128667131");
+    assert_eq!(plan.query_origin.as_ref().unwrap().key, "7112345678");
     assert_eq!(plan.relations.len(), 1);
     assert_eq!(plan.relations[0].source_kind, "qq");
-    assert_eq!(plan.relations[0].source_key, "2128667131");
+    assert_eq!(plan.relations[0].source_key, "7112345678");
     assert_eq!(plan.relations[0].target_kind, "phone");
     // 86- 前缀剥离
-    assert_eq!(plan.relations[0].target_key, "16650030502");
+    assert_eq!(plan.relations[0].target_key, "16600000001");
 }
 
 #[test]
@@ -130,14 +130,14 @@ fn binding_accepts_86_prefix_phone() {
 #[test]
 fn phone_format_matrix_normalizes() {
     // 全格式矩阵：位置合同与规范化全过（打印版诊断已验证8格式全true）
-    for (raw, name) in [("86-16650030502","86-"),("+86-16650030502","+86-"),("+8616650030502","+86无分隔"),("8616650030502","86无分隔"),("166 5003 0502","空格分段"),("166-5003-0502","连字符"),("(86)16650030502","括号"),("16650030502","裸号")] {
+    for (raw, name) in [("86-16600000001","86-"),("+86-16600000001","+86-"),("+8616600000001","+86无分隔"),("8616600000001","86无分隔"),("166 0000 0001","空格分段"),("166-0000-0001","连字符"),("(86)16600000001","括号"),("16600000001","裸号")] {
         let plan = canonical_plan("qq-phone-lookup", LOOKUP, vec![
-            row(&[raw,"2128667131","2128667131","","【Success】成功","c1","c2","【1】密保手机","","",""]),
+            row(&[raw,"7112345678","7112345678","","【Success】成功","c1","c2","【1】密保手机","","",""]),
         ]);
-        assert_eq!(plan.relations[0].target_key, "16650030502", "格式 {} 规范化失败", name);
+        assert_eq!(plan.relations[0].target_key, "16600000001", "格式 {} 规范化失败", name);
     }
     // 非法手机号：rebuild 必须拒绝（返回Err而非panic）
-    let raw_table = vec![row(LOOKUP), row(&["12345","2128667131","2128667131","","【Success】成功","c1","c2","","","",""])];
+    let raw_table = vec![row(LOOKUP), row(&["12345","7112345678","7112345678","","【Success】成功","c1","c2","","","",""])];
     let bad_input = ImportPlanInput {
         case_id: String::new(), source_summary: "matrix-invalid".into(), template: "qq-phone-lookup".into(),
         template_version: "strict-v1".into(), template_mode: "strict-header".into(),
@@ -153,11 +153,11 @@ fn phone_format_matrix_normalizes() {
 #[test]
 fn manual_mapping_normalizes_86_phone() {
     // 手工映射路径：86- 手机号校验通过且入库规范化
-    let raw_table=vec![row(&["QQ","手机"]),row(&["710000001","+86 166-5003-0502"])];
+    let raw_table=vec![row(&["QQ","手机"]),row(&["710000001","+86 166-0000-0001"])];
     let mapping=json!({"hasHeader":true,"sourceIndex":0,"sourceKind":"qq","targetIndex":1,"targetKind":"phone","displayNameIndex":null,"relationLabel":"绑定"});
     let mut input=ImportPlanInput{case_id:String::new(),source_summary:"manual-phone".into(),template:"custom".into(),template_version:"manual-mapped-v1".into(),template_mode:"manual-mapped".into(),header_fingerprint:raw_table[0].join("\u{1f}"),input_digest:strict_digest(&raw_table),raw_table,query_origin:None,current_source:None,overlap_candidates:vec![],parent_selection_reason:None,explicit_parent_key:None,mapping:Some(mapping),endpoint_contract:json!({"sourceColumn":"QQ","sourceKind":"qq","targetColumn":"手机","targetKind":"phone","relationLabel":"绑定"}),duplicate_relations:0,raw_row_count:0,valid_row_count:0,relation_count:0,entity_count:0,row_decisions:vec![],batch_errors:vec![],bridge_relation_count:0,entities:vec![],relations:vec![],error_count:0};
     let rebuilt=rebuild_manual_plan(&input).unwrap();
-    assert_eq!(rebuilt.relations[0].target_key,"16650030502");
+    assert_eq!(rebuilt.relations[0].target_key,"16600000001");
     assert_eq!(rebuilt.relations[0].target_kind,"phone");
     input.query_origin=rebuilt.query_origin.clone();
     input.raw_row_count=rebuilt.decisions.len() as i64;input.valid_row_count=input.raw_row_count;
@@ -227,7 +227,7 @@ fn manual_mapping_bridge_follows_access_contract() {
 #[test]
 fn strict_phone_keys_accept_mobile_prefixes_and_reject_invalid_forms() {
     // v2 合同：大陆裸号与国际 + 形态均为合法规范键
-    for phone in ["13800138000", "19900138000", "+85291234567", "+14155551234", "+79001234567"] {
+    for phone in ["13800138000", "19900138000", "+85200000001", "+14150000100", "+79001234567"] {
         assert!(valid_strict_key("phone", phone), "应接受手机号 {phone}");
     }
     // 非规范形直接校验必须拒绝：非法段、长度不符、连字符未清洗（+86 形态是合法国际键，经 normalize 会剥为裸号）
@@ -656,22 +656,22 @@ fn probe_import_manual_row_limit_boundary() {
 
 #[test]
 fn probe_import_manual_phone_canonicalization_backend() {
-    // 后端手工映射：来源手机号国际裸号 85212345678 → +85212345678；86-16650030502 → 16650030502
-    let raw=vec![row(&["手机号","QQ"]),row(&["86-16650030502","710000001"]),row(&["+852 9123 4567","710000002"])];
+    // 后端手工映射：来源手机号国际裸号 85200000001 → +85200000001；86-16600000001 → 16600000001
+    let raw=vec![row(&["手机号","QQ"]),row(&["86-16600000001","710000001"]),row(&["+852 0000 0001","710000002"])];
     let mapping=json!({"hasHeader":true,"sourceIndex":0,"sourceKind":"phone","targetIndex":1,"targetKind":"qq","relationLabel":"绑定"});
     let input=ImportPlanInput{case_id:String::new(),source_summary:"probe".into(),template:"custom".into(),template_version:"manual-mapped-v1".into(),template_mode:"manual-mapped".into(),header_fingerprint:raw[0].join("\u{1f}"),input_digest:strict_digest(&raw),raw_table:raw,query_origin:None,current_source:None,overlap_candidates:vec![],parent_selection_reason:None,explicit_parent_key:None,mapping:Some(mapping),endpoint_contract:json!({}),duplicate_relations:0,raw_row_count:0,valid_row_count:0,relation_count:0,entity_count:0,row_decisions:vec![],batch_errors:vec![],bridge_relation_count:0,entities:vec![],relations:vec![],error_count:0};
     let err=rebuild_manual_plan(&input).err();
     // 注意：来源列两个不同手机号 → sources.len()!=1 应拒绝（来源必须唯一）
     assert!(err.is_some(),"来源列必须全批唯一");
     // 拆成两批各自唯一
-    let raw1=vec![row(&["手机号","QQ"]),row(&["86-16650030502","710000001"])];
+    let raw1=vec![row(&["手机号","QQ"]),row(&["86-16600000001","710000001"])];
     let mut i1=input.clone();i1.raw_table=raw1.clone();i1.header_fingerprint=raw1[0].join("\u{1f}");i1.input_digest=strict_digest(&raw1);
     let r1=rebuild_manual_plan(&i1).expect("86-前缀单行应通过");
-    assert_eq!(r1.entities.iter().find(|e|e.kind=="phone").unwrap().key,"16650030502");
-    let raw2=vec![row(&["手机号","QQ"]),row(&["+852 9123 4567","710000002"])];
+    assert_eq!(r1.entities.iter().find(|e|e.kind=="phone").unwrap().key,"16600000001");
+    let raw2=vec![row(&["手机号","QQ"]),row(&["+852 0000 0001","710000002"])];
     let mut i2=input.clone();i2.raw_table=raw2.clone();i2.header_fingerprint=raw2[0].join("\u{1f}");i2.input_digest=strict_digest(&raw2);
     let r2=rebuild_manual_plan(&i2).expect("+852形态单行应通过");
-    assert_eq!(r2.entities.iter().find(|e|e.kind=="phone").unwrap().key,"+85291234567");
+    assert_eq!(r2.entities.iter().find(|e|e.kind=="phone").unwrap().key,"+85200000001");
 }
 
 #[test]

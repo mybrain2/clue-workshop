@@ -1076,7 +1076,7 @@ pub fn add_relations(input: AddRelationsInput) -> CoreResult<AddRelationsResult>
         return Err("关系名称不能为空".into());
     }
     let mut seen = HashSet::new();
-    // 快捷录入 phone 值入库前规范化（+852 9123 4567 与 +85291234567 去重为同一实体）；非法值规范化后仍原样，由使用方理解
+    // 快捷录入 phone 值入库前规范化（+852 0000 0001 与 +85200000001 去重为同一实体）；非法值规范化后仍原样，由使用方理解
     let entries: Vec<(String, String)> = values
         .into_iter()
         .enumerate()
@@ -4847,8 +4847,8 @@ mod phone_contract_tests {
         let case = create_case(CreateCaseInput { title: "intl-phone".into(), background: String::new(), seed_kind: "qq".into(), seed_value: "10001".into() }).unwrap();
         let raw_table = vec![
             vec!["QQ".to_string(), "手机号".to_string()],
-            vec!["2128667131".to_string(), "852-9123 4567".to_string()],
-            vec!["2128667131".to_string(), "+1 (415) 555-1234".to_string()],
+            vec!["7112345678".to_string(), "852-0000 0001".to_string()],
+            vec!["7112345678".to_string(), "+1 (415) 555-0100".to_string()],
         ];
         let input = ImportPlanInput {
             case_id: case.id.clone(),
@@ -4881,8 +4881,8 @@ mod phone_contract_tests {
         let rebuilt = rebuild_manual_plan(&input).expect("国际手机号手工映射应通过");
         assert_eq!(rebuilt.relations.len(), 2);
         assert!(rebuilt.relations.iter().all(|r| r.target_kind == "phone" && r.target_key.starts_with('+')));
-        assert!(rebuilt.relations.iter().any(|r| r.target_key == "+85291234567"));
-        assert!(rebuilt.relations.iter().any(|r| r.target_key == "+14155551234"));
+        assert!(rebuilt.relations.iter().any(|r| r.target_key == "+85200000001"));
+        assert!(rebuilt.relations.iter().any(|r| r.target_key == "+14155550100"));
     }
 
     #[test]
@@ -4891,7 +4891,7 @@ mod phone_contract_tests {
         let _root = tests::TestDataRoot::new();
         let case = create_case(CreateCaseInput { title: "intl-strict".into(), background: String::new(), seed_kind: "qq".into(), seed_value: "10001".into() }).unwrap();
         let headers = ["手机号(解密)","QQ账号(解密)","命中查询内容","错误备注","错误码类型","QQ账号","手机号","手机号类型","设置时间","修改时间","验证时间"];
-        let row = vec!["+852 9123 4567".to_string(),"2128667131".into(),"2128667131".into(),"".into(),"【Success】成功".into(),"c1".into(),"c2".into(),"【1】密保手机".into(),"".into(),"".into(),"".into()];
+        let row = vec!["+852 0000 0001".to_string(),"7112345678".into(),"7112345678".into(),"".into(),"【Success】成功".into(),"c1".into(),"c2".into(),"【1】密保手机".into(),"".into(),"".into(),"".into()];
         let raw_table = vec![headers.iter().map(|h| h.to_string()).collect::<Vec<_>>(), row];
         let input = ImportPlanInput {
             case_id: case.id.clone(),
@@ -4922,8 +4922,8 @@ mod phone_contract_tests {
             error_count: 0,
         };
         let rebuilt = rebuild_strict_plan(&input, &Default::default()).expect("国际手机号严格模板应通过");
-        assert_eq!(rebuilt.relations[0].target_key, "+85291234567");
-        assert_eq!(rebuilt.query_origin.as_ref().unwrap().key, "2128667131");
+        assert_eq!(rebuilt.relations[0].target_key, "+85200000001");
+        assert_eq!(rebuilt.query_origin.as_ref().unwrap().key, "7112345678");
     }
 
     #[test]
@@ -4937,7 +4937,7 @@ mod phone_contract_tests {
             case_id: case.id.clone(),
             source_id: source.id.clone(),
             target_kind: "phone".into(),
-            values: vec!["+852 9123 4567".into(), "852-9123-4567".into()],
+            values: vec!["+852 0000 0001".into(), "852-0000-0001".into()],
             display_names: vec![],
             label: "持有机".into(),
             spread: "同设备".into(),
@@ -4952,7 +4952,7 @@ mod phone_contract_tests {
         assert_eq!(result.added_count, 1, "两种写法应去重为一条关系");
         let after = get_case_detail(&case.id).unwrap();
         let phones: Vec<&str> = after.entities.iter().filter(|e| e.kind == "phone").map(|e| e.label.as_str()).collect();
-        assert_eq!(phones, vec!["+85291234567"]);
+        assert_eq!(phones, vec!["+85200000001"]);
     }
 }
 

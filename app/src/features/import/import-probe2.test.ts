@@ -73,21 +73,21 @@ describe("维度6：同机（qq-device）专测", () => {
 
 describe("维度7：手机号绑定/查询方向专测", () => {
   it("binding方向：手机号→QQ（方向合同v2，起点顺流向结果）", () => {
-    const rows = [["880000001","16650030502","",S,"cipher","cipherP","本人","2026-01-01","",""]];
+    const rows = [["880000001","16600000001","",S,"cipher","cipherP","本人","2026-01-01","",""]];
     const plan = buildImportPlan(csv(H.binding, rows));
-    expect(plan.relations[0]).toMatchObject({ sourceKind:"phone", sourceKey:"16650030502", targetKind:"qq", targetKey:"880000001", label:"绑定手机号" });
-    expect(plan.queryOrigin).toMatchObject({ kind:"phone", key:"16650030502" });
+    expect(plan.relations[0]).toMatchObject({ sourceKind:"phone", sourceKey:"16600000001", targetKind:"qq", targetKey:"880000001", label:"绑定手机号" });
+    expect(plan.queryOrigin).toMatchObject({ kind:"phone", key:"16600000001" });
   });
   it("lookup方向：QQ→手机号（同向不翻转）", () => {
-    const rows = [["16650030502","880000001","880000001","",S,"cipherQ","cipherP","本人","2026-01-01","",""]];
+    const rows = [["16600000001","880000001","880000001","",S,"cipherQ","cipherP","本人","2026-01-01","",""]];
     const plan = buildImportPlan(csv(H.lookup, rows));
-    expect(plan.relations[0]).toMatchObject({ sourceKind:"qq", sourceKey:"880000001", targetKind:"phone", targetKey:"16650030502" });
+    expect(plan.relations[0]).toMatchObject({ sourceKind:"qq", sourceKey:"880000001", targetKind:"phone", targetKey:"16600000001" });
     expect(plan.queryOrigin).toMatchObject({ kind:"qq", key:"880000001" });
   });
   it("同一手机号绑多个QQ → 全部入库（不强制唯一）", () => {
     const rows = [
-      ["880000001","16650030502","",S,"cipher","cipherP","本人","","",""],
-      ["880000002","16650030502","",S,"cipher","cipherP","本人","","",""],
+      ["880000001","16600000001","",S,"cipher","cipherP","本人","","",""],
+      ["880000002","16600000001","",S,"cipher","cipherP","本人","","",""],
     ];
     const plan = buildImportPlan(csv(H.binding, rows));
     expect(plan.canSubmit).toBe(true);
@@ -95,10 +95,10 @@ describe("维度7：手机号绑定/查询方向专测", () => {
     expect([...plan.sourceEntities, ...plan.targetEntities].filter(e=>e.kind==="qq")).toHaveLength(2);
   });
   it("binding 手机号列密文 → 起点回退主起点列（命中查询内容）", () => {
-    const rows = [["880000001","16650030502","",S,"cipher","cipherEnc","本人","","",""]];
+    const rows = [["880000001","16600000001","",S,"cipher","cipherEnc","本人","","",""]];
     const plan = buildImportPlan(csv(H.binding, rows));
     expect(plan.canSubmit).toBe(true);
-    expect(plan.queryOrigin).toMatchObject({ kind:"phone", key:"16650030502" });
+    expect(plan.queryOrigin).toMatchObject({ kind:"phone", key:"16600000001" });
   });
 });
 
@@ -161,16 +161,16 @@ describe("维度9：桥接合同专测", () => {
     expect(currentClueBridge(plan, undefined)).toBeUndefined();
   });
   it("桥接实体已在本批结果中 → 不重复追加实体，仅追加关系（2026-09-23 复用合同）", () => {
-    // 场景：绑定表查出的QQ恰好包含当前选中QQ（张士豪真实案例：2128667131 既是选中对象又是表内结果QQ）
+    // 场景：绑定表查出的QQ恰好包含当前选中QQ（真实案例（合成号复现）：7112345678 既是选中对象又是表内结果QQ）
     const bindingHeaders = ["QQ账号(解密)","命中查询内容","错误备注","错误码类型","QQ账号","手机号","手机号类型","设置时间","修改时间","验证时间"];
-    const row = (qq: string) => [qq,"16650030502","",S,"cipher","cipher","【1】密保手机","2017/07/26 23:46:41","2026/07/18 13:21:26","2026/08/03 13:27:35"];
-    const cur = { kind: "qq" as const, value: "2128667131" };
-    const plan = buildImportPlan(csv(bindingHeaders, [row("2128667131"), row("166864075")]), { currentSource: cur });
+    const row = (qq: string) => [qq,"16600000001","",S,"cipher","cipher","【1】密保手机","2017/07/26 23:46:41","2026/07/18 13:21:26","2026/08/03 13:27:35"];
+    const cur = { kind: "qq" as const, value: "7112345678" };
+    const plan = buildImportPlan(csv(bindingHeaders, [row("7112345678"), row("710300001")]), { currentSource: cur });
     expect(plan.accessStatus).toBe("bridge-available");
     const bridge = currentClueBridge(plan, plan.currentSource);
     expect(bridge).toBeDefined();
     const merged = withCurrentClueBridge(plan, bridge);
-    // 实体不重复：合并后实体集合与原计划一致（2128667131 已在 targetEntities 中）
+    // 实体不重复：合并后实体集合与原计划一致（7112345678 已在 targetEntities 中）
     const keys = merged.sourceEntities.concat(merged.targetEntities).map(e => `${e.kind}\u0000${e.key}`);
     expect(new Set(keys).size).toBe(keys.length);
     // 关系仍然 +1（桥接关系）
