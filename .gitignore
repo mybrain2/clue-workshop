@@ -27,3 +27,7 @@ release/
 app/qa-*.png
 app/desktop-shell-preview.png
 app/线索研判_简要操作手册.png
+
+# ---- 本地保留：案件相关测试与文档，永不推送到任何远程 ----
+本地保留-敏感测试/
+项目真相/
