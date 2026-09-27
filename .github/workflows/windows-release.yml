@@ -1,0 +1,51 @@
+name: windows-release
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main, release]
+
+jobs:
+  windows-build:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install Rust (pinned by rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri -> target
+
+      - name: Install frontend dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Rust tests
+        working-directory: app/src-tauri
+        run: cargo test --release
+
+      - name: Build Tauri (NSIS)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          tagName: v__VERSION__
+          releaseName: "线索研判 v__VERSION__ (Windows)"
+          releaseBody: "由 GitHub Actions 自动构建。安装包为 NSIS x64，静默安装参数 /S。"
+          releaseDraft: true
+          prerelease: false
+          args: --target x86_64-pc-windows-msvc
