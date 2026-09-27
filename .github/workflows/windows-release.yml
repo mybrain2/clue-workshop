@@ -9,6 +9,7 @@ jobs:
   windows-build:
     permissions:
       contents: write
+      issues: write
     runs-on: windows-latest
 
     steps:
@@ -47,7 +48,18 @@ jobs:
         run: |
           FAILED_TESTS=$(grep -E "^test .* (FAILED|panicked)|panicked at|test result: FAILED" test-output.log | head -30 || true)
           TAIL=$(tail -100 test-output.log)
-          gh issue create --title "CI Windows 测试失败（$(date +%Y%m%d-%H%M)）" --body "$(printf '## 失败摘要\n\`\`\`\n%s\n\`\`\`\n\n## 日志尾部\n\`\`\`\n%s\n\`\`\`\n' "$FAILED_TESTS" "$TAIL")" || true
+          {
+            echo "## 失败摘要"
+            echo '```'
+            echo "$FAILED_TESTS"
+            echo '```'
+            echo "## 日志尾部"
+            echo '```'
+            echo "$TAIL"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          gh issue create --title "CI Windows 测试失败（$(date +%Y%m%d-%H%M)）" --body "$(printf '## 失败摘要\n\`\`\`\n%s\n\`\`\`\n\n## 日志尾部\n\`\`\`\n%s\n\`\`\`\n' "$FAILED_TESTS" "$TAIL")"
+          echo "issue 创建结果 exit=$? （非0时会显示上方错误，不再吞掉）"
 
       - name: Build Tauri (NSIS)
         uses: tauri-apps/tauri-action@v0
