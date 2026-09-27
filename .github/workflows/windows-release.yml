@@ -35,7 +35,16 @@ jobs:
 
       - name: Rust tests
         working-directory: app/src-tauri
-        run: cargo test --release
+        run: cargo test --release -- --nocapture 2>&1
+        shell: bash
+
+      - name: Dump failure context
+        if: failure()
+        working-directory: app/src-tauri
+        shell: bash
+        run: |
+          echo "=== 失败现场：完整测试输出已含 --nocapture ==="
+          cargo test --release 2>&1 | tail -80 || true
 
       - name: Build Tauri (NSIS)
         uses: tauri-apps/tauri-action@v0
