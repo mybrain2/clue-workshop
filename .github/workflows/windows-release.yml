@@ -34,8 +34,14 @@ jobs:
         working-directory: app
         run: npm ci
 
+      - name: Build frontend + prepare XMind sidecar（生成 node.exe，cargo test 依赖它）
+        working-directory: app
+        run: npm run build
+
       - name: Rust tests
         working-directory: app/src-tauri
+        env:
+          RUST_BACKTRACE: full
         run: cargo test --release 2>&1 | tee test-output.log | tail -40
         shell: bash
 
@@ -46,8 +52,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          FAILED_TESTS=$(grep -E "^test .* (FAILED|panicked)|panicked at|test result: FAILED" test-output.log | head -30 || true)
-          TAIL=$(tail -100 test-output.log)
+          gh label create ci-failure --color d73a4a 2>/dev/null || true
+          FAILED_TESTS=$(grep -E "^test .* (FAILED|panicked)|panicked at|test result: FAILED|stack backtrace|at case_core|at structured" test-output.log | head -60 || true)
+          TAIL=$(tail -150 test-output.log)
           {
             echo "## 失败摘要"
             echo '```'
@@ -58,8 +65,13 @@ jobs:
             echo "$TAIL"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          gh issue create --title "CI Windows 测试失败（$(date +%Y%m%d-%H%M)）" --body "$(printf '## 失败摘要\n\`\`\`\n%s\n\`\`\`\n\n## 日志尾部\n\`\`\`\n%s\n\`\`\`\n' "$FAILED_TESTS" "$TAIL")"
-          echo "issue 创建结果 exit=$? （非0时会显示上方错误，不再吞掉）"
+          EXISTING=$(gh issue list --label ci-failure --state open --json number --jq 'length' 2>/dev/null || echo 1)
+          if [ "$EXISTING" = "0" ]; then
+            gh issue create --title "CI Windows 测试失败（$(date +%Y%m%d-%H%M)）" --label ci-failure --body "$(printf '## 失败摘要\n\`\`\`\n%s\n\`\`\`\n\n## 日志尾部\n\`\`\`\n%s\n\`\`\`\n' "$FAILED_TESTS" "$TAIL")"
+          else
+            gh issue comment $(gh issue list --label ci-failure --state open --json number --jq '.[0].number') --body "$(printf '## 再次失败（%s）\n\`\`\`\n%s\n\`\`\`\n' "$(date +%Y%m%d-%H%M)" "$FAILED_TESTS")"
+          fi
+          echo "issue 上报完成"
 
       - name: Build Tauri (NSIS)
         uses: tauri-apps/tauri-action@v0
