@@ -35,16 +35,19 @@ jobs:
 
       - name: Rust tests
         working-directory: app/src-tauri
-        run: cargo test --release -- --nocapture 2>&1
+        run: cargo test --release 2>&1 | tee test-output.log | tail -40
         shell: bash
 
-      - name: Dump failure context
+      - name: Report failure to issue (publicly readable)
         if: failure()
         working-directory: app/src-tauri
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "=== 失败现场：完整测试输出已含 --nocapture ==="
-          cargo test --release 2>&1 | tail -80 || true
+          FAILED_TESTS=$(grep -E "^test .* (FAILED|panicked)|panicked at|test result: FAILED" test-output.log | head -30 || true)
+          TAIL=$(tail -100 test-output.log)
+          gh issue create --title "CI Windows 测试失败（$(date +%Y%m%d-%H%M)）" --body "$(printf '## 失败摘要\n\`\`\`\n%s\n\`\`\`\n\n## 日志尾部\n\`\`\`\n%s\n\`\`\`\n' "$FAILED_TESTS" "$TAIL")" || true
 
       - name: Build Tauri (NSIS)
         uses: tauri-apps/tauri-action@v0
