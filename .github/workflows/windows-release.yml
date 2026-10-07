@@ -45,6 +45,19 @@ jobs:
         run: cargo test --release 2>&1 | tee test-output.log | tail -40
         shell: bash
 
+      - name: Build Tauri (NSIS)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          includeDebugLogs: true
+          tagName: v__VERSION__
+          releaseName: "线索研判 v__VERSION__ (Windows)"
+          releaseBody: "由 GitHub Actions 自动构建。安装包为 NSIS x64，静默安装参数 /S。"
+          releaseDraft: true
+          prerelease: false
+          args: --target x86_64-pc-windows-msvc
       - name: Report failure to issue (publicly readable)
         if: failure()
         working-directory: app/src-tauri
@@ -79,17 +92,3 @@ jobs:
             gh issue comment $(gh issue list --label ci-failure --state open --json number --jq '.[0].number') --body "$(printf '## 再次失败（%s · %s）\n\`\`\`\n%s\n\`\`\`\n' "$(date +%Y%m%d-%H%M)" "$STAGE" "$FAILED_TESTS")"
           fi
           echo "issue 上报完成"
-
-      - name: Build Tauri (NSIS)
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: app
-          includeDebugLogs: true
-          tagName: v__VERSION__
-          releaseName: "线索研判 v__VERSION__ (Windows)"
-          releaseBody: "由 GitHub Actions 自动构建。安装包为 NSIS x64，静默安装参数 /S。"
-          releaseDraft: true
-          prerelease: false
-          args: --target x86_64-pc-windows-msvc
