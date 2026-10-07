@@ -27,14 +27,26 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ inputs.tag || 'v0.7.15' }}"
-          echo "查询 tag=$TAG 的 release..."
-          # 优先匹配指定 tag 的草稿；找不到再列全部草稿辅助人工判断
+          {
+            echo "## release-publish 诊断"
+            echo "TAG=$TAG"
+            echo "### 全部 releases（认证视角）："
+            gh api "repos/{owner}/{repo}/releases?per_page=20" --jq '.[] | "id=\(.id) tag=\(.tag_name) draft=\(.draft) assets=\(.assets | length)"' || echo "列出失败"
+          } > publish-diag.txt 2>&1
+          cat publish-diag.txt
           RELEASE_ID=$(gh api "repos/{owner}/{repo}/releases" --jq ".[] | select(.tag_name == \"$TAG\" and .draft == true) | .id" | head -1)
           if [ -z "$RELEASE_ID" ]; then
-            echo "::error::tag=$TAG 的草稿不存在（可能已发布或从未创建）。当前全部 release："
-            gh api "repos/{owner}/{repo}/releases" --jq '.[] | "\(.id) \(.tag_name) draft=\(.draft)"' || true
+            echo "::error::tag=$TAG 的草稿不存在"
             exit 1
           fi
           gh api -X PATCH "repos/{owner}/{repo}/releases/$RELEASE_ID" -f draft=false
-          echo "已发布："
-          gh api "repos/{owner}/{repo}/releases/$RELEASE_ID" --jq '"\(.html_url) assets=\(.assets | length)"'
+          echo "已发布"
+
+      - name: Report failure to issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BODY=$(cat publish-diag.txt 2>/dev/null || echo "诊断缺失")
+          gh issue comment 2 --body "$(printf 'release-publish 再次失败：\n\`\`\`\n%s\n\`\`\`' "$BODY")" || gh issue create --title "release-publish 失败" --body "$(printf '\`\`\`\n%s\n\`\`\`' "$BODY")"
+
