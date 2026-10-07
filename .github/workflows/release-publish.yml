@@ -27,7 +27,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG="${{ inputs.tag || 'v0.7.15' }}"
+          TAG="${{ inputs.tag }}"
+          if [ -z "$TAG" ]; then TAG="v0.7.15"; fi
           {
             echo "## release-publish 诊断"
             echo "TAG=$TAG"
@@ -50,6 +51,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BODY=$(cat publish-diag.txt 2>/dev/null || echo "诊断缺失")
-          gh issue comment 2 --body "$(printf 'release-publish 再次失败：\n\`\`\`\n%s\n\`\`\`' "$BODY")" || gh issue create --title "release-publish 失败" --body "$(printf '\`\`\`\n%s\n\`\`\`' "$BODY")"
+          {
+            echo "release-publish 失败诊断："
+            echo "当前 releases（认证视角）："
+            gh api "repos/{owner}/{repo}/releases?per_page=30" --jq '.[] | "id=\(.id) tag=\(.tag_name) draft=\(.draft) assets=\(.assets|length)"' || echo "API列出失败"
+            echo "---诊断文件内容---"
+            cat publish-diag.txt 2>/dev/null || echo "（无诊断文件）"
+          } > /tmp/report.txt 2>&1
+          gh issue comment 2 --body-file /tmp/report.txt || echo "issue评论失败"
 
