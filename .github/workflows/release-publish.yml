@@ -19,6 +19,7 @@ jobs:
   publish:
     permissions:
       contents: write
+      issues: write
     runs-on: ubuntu-latest
     steps:
       - name: Publish draft release
@@ -34,6 +35,8 @@ jobs:
             gh api "repos/{owner}/{repo}/releases?per_page=20" --jq '.[] | "id=\(.id) tag=\(.tag_name) draft=\(.draft) assets=\(.assets | length)"' || echo "列出失败"
           } > publish-diag.txt 2>&1
           cat publish-diag.txt
+          echo "--- jq 查询草稿 ---"
+          gh api "repos/{owner}/{repo}/releases?per_page=20" --jq ".[] | select(.draft == true) | \"draft: \(.id) \(.tag_name) assets=\(.assets | length)\"" || echo "jq失败"
           RELEASE_ID=$(gh api "repos/{owner}/{repo}/releases" --jq ".[] | select(.tag_name == \"$TAG\" and .draft == true) | .id" | head -1)
           if [ -z "$RELEASE_ID" ]; then
             echo "::error::tag=$TAG 的草稿不存在"
