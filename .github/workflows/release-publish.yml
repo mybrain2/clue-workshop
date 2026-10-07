@@ -6,9 +6,6 @@ name: release-publish
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/release-publish.yml']
     inputs:
       tag:
         description: "要发布的 tag（如 v0.7.15）"
