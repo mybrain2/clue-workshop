@@ -53,8 +53,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh label create ci-failure --color d73a4a 2>/dev/null || true
-          FAILED_TESTS=$(grep -E "^test .* (FAILED|panicked)|panicked at|test result: FAILED|stack backtrace|at case_core|at structured" test-output.log | head -60 || true)
-          TAIL=$(tail -150 test-output.log)
+          # 判定失败环节：tests 阶段 grep 命中即为测试失败，否则是构建失败
+          FAILED_TESTS=$(grep -E "^test .* (FAILED|panicked)|panicked at|test result: FAILED" test-output.log 2>/dev/null | head -60 || true)
+          if [ -n "$FAILED_TESTS" ]; then
+            STAGE="Rust tests"
+            TAIL=$(tail -150 test-output.log)
+          else
+            STAGE="Build Tauri (NSIS) / tauri-action"
+            TAIL=$(echo "Rust tests 全部通过（test-output.log 无失败记录），失败发生在构建阶段。需要查看 Actions 日志中 tauri-action 的输出。")
+          fi
           {
             echo "## 失败摘要"
             echo '```'
@@ -67,9 +74,9 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           EXISTING=$(gh issue list --label ci-failure --state open --json number --jq 'length' 2>/dev/null || echo 1)
           if [ "$EXISTING" = "0" ]; then
-            gh issue create --title "CI Windows 测试失败（$(date +%Y%m%d-%H%M)）" --label ci-failure --body "$(printf '## 失败摘要\n\`\`\`\n%s\n\`\`\`\n\n## 日志尾部\n\`\`\`\n%s\n\`\`\`\n' "$FAILED_TESTS" "$TAIL")"
+            gh issue create --title "CI Windows 失败：${STAGE}（$(date +%Y%m%d-%H%M)）" --label ci-failure --body "$(printf '## 失败阶段：%s\n\`\`\`\n%s\n\`\`\`\n\n## 日志尾部\n\`\`\`\n%s\n\`\`\`\n' "$STAGE" "$FAILED_TESTS" "$TAIL")"
           else
-            gh issue comment $(gh issue list --label ci-failure --state open --json number --jq '.[0].number') --body "$(printf '## 再次失败（%s）\n\`\`\`\n%s\n\`\`\`\n' "$(date +%Y%m%d-%H%M)" "$FAILED_TESTS")"
+            gh issue comment $(gh issue list --label ci-failure --state open --json number --jq '.[0].number') --body "$(printf '## 再次失败（%s · %s）\n\`\`\`\n%s\n\`\`\`\n' "$(date +%Y%m%d-%H%M)" "$STAGE" "$FAILED_TESTS")"
           fi
           echo "issue 上报完成"
 
@@ -79,6 +86,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: app
+          includeDebugLogs: true
           tagName: v__VERSION__
           releaseName: "线索研判 v__VERSION__ (Windows)"
           releaseBody: "由 GitHub Actions 自动构建。安装包为 NSIS x64，静默安装参数 /S。"
