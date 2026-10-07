@@ -45,13 +45,23 @@ jobs:
         run: cargo test --release 2>&1 | tee test-output.log | tail -40
         shell: bash
 
+      - name: Clean stale draft releases (avoid asset already_exists)
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh api "repos/{owner}/{repo}/releases" --jq '.[] | select(.draft == true) | .id' | while read -r RID; do
+            echo "删除旧草稿 id=$RID"
+            gh api -X DELETE "repos/{owner}/{repo}/releases/$RID" || echo "删除失败 id=$RID"
+          done
       - name: Build Tauri (NSIS)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: app
-          includeDebugLogs: true
+          includeDebug: true
           tagName: v__VERSION__
           releaseName: "线索研判 v__VERSION__ (Windows)"
           releaseBody: "由 GitHub Actions 自动构建。安装包为 NSIS x64，静默安装参数 /S。"
@@ -74,6 +84,16 @@ jobs:
           if (Test-Path "$env:LOCALAPPDATA\tauri") { Get-ChildItem "$env:LOCALAPPDATA\tauri" | Select-Object -ExpandProperty Name | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Append -Encoding utf8 } else { "$env:LOCALAPPDATA\tauri 不存在" | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Append -Encoding utf8 }
           Get-Content nsis-diag.txt
 
+      - name: Publish draft to official release
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh api "repos/{owner}/{repo}/releases" --jq '.[] | select(.draft == true) | .id' | while read -r RID; do
+            echo "发布草稿 id=$RID"
+            gh api -X PATCH "repos/{owner}/{repo}/releases/$RID" -f draft=false || echo "PATCH失败 id=$RID"
+          done
       - name: Report failure to issue (publicly readable)
         if: failure()
         working-directory: app/src-tauri
