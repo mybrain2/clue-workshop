@@ -1,0 +1,37 @@
+name: release-publish
+
+# 用途：把 windows-release.yml 产出的 Draft Release 转为正式发布。
+# 背景：Draft Release 的资产匿名不可下载；正式 Release 在 public 仓库匿名可下载。
+# 触发：手动（workflow_dispatch）——发布是人工决策，不自动执行。
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要发布的 tag（如 v0.7.15）"
+        required: true
+        type: string
+
+jobs:
+  publish:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          echo "查询 tag=$TAG 的 release..."
+          # 优先匹配指定 tag 的草稿；找不到再列全部草稿辅助人工判断
+          RELEASE_ID=$(gh api "repos/{owner}/{repo}/releases" --jq ".[] | select(.tag_name == \"$TAG\" and .draft == true) | .id" | head -1)
+          if [ -z "$RELEASE_ID" ]; then
+            echo "::error::tag=$TAG 的草稿不存在（可能已发布或从未创建）。当前全部 release："
+            gh api "repos/{owner}/{repo}/releases" --jq '.[] | "\(.id) \(.tag_name) draft=\(.draft)"' || true
+            exit 1
+          fi
+          gh api -X PATCH "repos/{owner}/{repo}/releases/$RELEASE_ID" -f draft=false
+          echo "已发布："
+          gh api "repos/{owner}/{repo}/releases/$RELEASE_ID" --jq '"\(.html_url) assets=\(.assets | length)"'
