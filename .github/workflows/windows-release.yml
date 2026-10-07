@@ -62,16 +62,16 @@ jobs:
         if: failure()
         shell: powershell
         run: |
-          "=== NSIS 产物目录 ===" | Out-File -FilePath nsis-diag.txt -Encoding utf8
+          "=== NSIS 产物目录 ===" | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Encoding utf8
           if (Test-Path "app\src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis") {
-            Get-ChildItem "app\src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis" | Format-Table Name,Length | Out-File -FilePath nsis-diag.txt -Append -Encoding utf8
-          } else { "目录不存在" | Out-File -FilePath nsis-diag.txt -Append -Encoding utf8 }
-          "=== Rust target bundle 目录 ===" | Out-File -FilePath nsis-diag.txt -Append -Encoding utf8
+            Get-ChildItem "app\src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis" | Format-Table Name,Length | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Append -Encoding utf8
+          } else { "目录不存在" | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Append -Encoding utf8 }
+          "=== Rust target bundle 目录 ===" | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Append -Encoding utf8
           if (Test-Path "app\src-tauri\target\x86_64-pc-windows-msvc\release\bundle") {
-            Get-ChildItem "app\src-tauri\target\x86_64-pc-windows-msvc\release\bundle" | Select-Object -ExpandProperty Name | Out-File -FilePath nsis-diag.txt -Append -Encoding utf8
+            Get-ChildItem "app\src-tauri\target\x86_64-pc-windows-msvc\release\bundle" | Select-Object -ExpandProperty Name | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Append -Encoding utf8
           }
-          "=== Tauri 缓存目录 ===" | Out-File -FilePath nsis-diag.txt -Append -Encoding utf8
-          if (Test-Path "$env:LOCALAPPDATA\tauri") { Get-ChildItem "$env:LOCALAPPDATA\tauri" | Select-Object -ExpandProperty Name | Out-File -FilePath nsis-diag.txt -Append -Encoding utf8 } else { "$env:LOCALAPPDATA\tauri 不存在" | Out-File -FilePath nsis-diag.txt -Append -Encoding utf8 }
+          "=== Tauri 缓存目录 ===" | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Append -Encoding utf8
+          if (Test-Path "$env:LOCALAPPDATA\tauri") { Get-ChildItem "$env:LOCALAPPDATA\tauri" | Select-Object -ExpandProperty Name | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Append -Encoding utf8 } else { "$env:LOCALAPPDATA\tauri 不存在" | Out-File -FilePath "$env:GITHUB_WORKSPACE\nsis-diag.txt" -Append -Encoding utf8 }
           Get-Content nsis-diag.txt
 
       - name: Report failure to issue (publicly readable)
@@ -89,7 +89,7 @@ jobs:
             TAIL=$(tail -150 test-output.log)
           else
             STAGE="Build Tauri (NSIS) / tauri-action"
-            TAIL=$(cat nsis-diag.txt 2>/dev/null || echo "诊断文件缺失；Rust tests 全过，失败在构建阶段")
+            TAIL=$(cat "$GITHUB_WORKSPACE/nsis-diag.txt" 2>/dev/null || echo "诊断文件缺失；Rust tests 全过，失败在构建阶段")
           fi
           {
             echo "## 失败摘要"
