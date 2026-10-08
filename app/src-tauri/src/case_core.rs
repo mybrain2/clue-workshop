@@ -2187,6 +2187,9 @@ pub fn permanently_delete_case(id: &str, confirmed_title: &str) -> CoreResult<()
     Ok(())
 }
 
+// v1 导出死代码清理（0.7.16）：以下两个转义工具不再被活代码调用，保留供单测守护
+// 与未来导出格式复用（csv 防 Excel 公式注入，xml 防注入与非法控制字符）。
+#[allow(dead_code)]
 fn xml(text: &str) -> String {
     let cleaned: String = text
         .chars()
@@ -2205,6 +2208,7 @@ fn xml(text: &str) -> String {
         .replace('\'', "&apos;")
 }
 
+#[allow(dead_code)]
 fn csv(text: &str) -> String {
     let safe = if matches!(
         text.trim_start().chars().next(),
@@ -3346,230 +3350,7 @@ pub fn export_case_to(id: &str, destination_root: Option<&str>) -> CoreResult<Ex
     let portable = export_case_v2(&detail, &portable_root)?;
     let conn = open()?;
     touch(&conn, id, "export_case", "导出可移植案件包 v2")?;
-    return Ok(portable);
-    #[allow(unreachable_code)]
-    let root = portable_root;
-    let safe_title: String = detail
-        .case
-        .title
-        .chars()
-        .map(|c| {
-            if c.is_alphanumeric() || c == '-' || c == '_' {
-                c
-            } else {
-                '_'
-            }
-        })
-        .collect();
-    fs::create_dir_all(&root).map_err(|e| e.to_string())?;
-    let export_id = Uuid::new_v4();
-    let final_dir = root.join(format!(
-        "{}-{}-{}",
-        safe_title,
-        Local::now().format("%Y%m%d-%H%M%S%.3f"),
-        export_id
-    ));
-    if final_dir.exists() {
-        return Err("导出目标已存在，已拒绝覆盖".into());
-    }
-    let dir = root.join(format!(".exporting-{export_id}"));
-    fs::create_dir(&dir).map_err(|e| e.to_string())?;
-    let seed = detail
-        .entities
-        .iter()
-        .find(|entity| entity.id == detail.root_id)
-        .map(|entity| entity.label.as_str())
-        .unwrap_or("初始线索");
-    let summary = format!("# {}\n\n## 案情简介\n{}\n\n## 警方处置\n{}\n\n## 当前现状\n{}\n\n## 线索概括\n本案以 {} 为起点，当前已形成 {} 个对象、{} 条关系。以下内容只基于已录入线索生成。\n", detail.case.title, if detail.case.background.trim().is_empty() { "未填写" } else { &detail.case.background }, if detail.case.police_disposal.trim().is_empty() { "未填写" } else { &detail.case.police_disposal }, if detail.case.current_status.trim().is_empty() { "未填写" } else { &detail.case.current_status }, seed, detail.entities.len(), detail.relations.len());
-    let columns = 5usize;
-    let mut svg = String::from("<svg xmlns='http://www.w3.org/2000/svg' width='1500' height='1000'><rect width='100%' height='100%' fill='#f8f8f6'/>");
-    for relation in &detail.relations {
-        if let (Some(source), Some(target)) = (
-            detail
-                .entities
-                .iter()
-                .position(|e| e.id == relation.source_id),
-            detail
-                .entities
-                .iter()
-                .position(|e| e.id == relation.target_id),
-        ) {
-            let (sx, sy) = (
-                100 + (source % columns) * 280 + 90,
-                120 + (source / columns) * 130 + 27,
-            );
-            let (tx, ty) = (
-                100 + (target % columns) * 280 + 90,
-                120 + (target / columns) * 130 + 27,
-            );
-            let (color, width) = if relation.emphasis {
-                ("#c2410c", 4)
-            } else {
-                ("#8a9391", 2)
-            };
-            svg.push_str(&format!("<line x1='{sx}' y1='{sy}' x2='{tx}' y2='{ty}' stroke='{color}' stroke-width='{width}'/><text x='{}' y='{}' font-family='Arial' font-size='10' fill='{color}'>{}</text>", (sx+tx)/2, (sy+ty)/2-6, xml(&relation.label)));
-        }
-    }
-    for (index, entity) in detail.entities.iter().enumerate() {
-        let (x, y) = (100 + (index % columns) * 280, 120 + (index / columns) * 130);
-        let accent = if entity.accent.trim().is_empty() {
-            "#54625f"
-        } else {
-            entity.accent.as_str()
-        };
-        let width = if entity.pinned { 3 } else { 1 };
-        svg.push_str(&format!("<rect x='{x}' y='{y}' width='180' height='54' rx='10' fill='#ffffff' stroke='{}' stroke-width='{width}'/><text x='{}' y='{}' font-family='Arial' font-size='13' fill='#1d2927'>{}</text>", xml(accent), x+12, y+32, xml(if entity.display_name.trim().is_empty() { &entity.label } else { &entity.display_name })));
-    }
-    svg.push_str("</svg>");
-    let mut legacy_csv = String::from("source,relation,target,spread,status,note\n");
-    let mut nodes_csv = String::from(
-        "id,case_id,type,label,display_name,status,role,note,accent,pinned,custom_type\n",
-    );
-    let mut edges_csv =
-        String::from("id,case_id,source_id,target_id,label,spread,status,note,emphasis\n");
-    for entity in &detail.entities {
-        nodes_csv.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{},{},{}\n",
-            csv(&entity.id),
-            csv(&entity.case_id),
-            csv(&entity.kind),
-            csv(&entity.label),
-            csv(&entity.display_name),
-            csv(&entity.status),
-            csv(&entity.role),
-            csv(&entity.note),
-            csv(&entity.accent),
-            entity.pinned,
-            csv(&entity.custom_type)
-        ));
-    }
-    for relation in &detail.relations {
-        let source = detail
-            .entities
-            .iter()
-            .find(|e| e.id == relation.source_id)
-            .map(|e| e.label.as_str())
-            .unwrap_or("未知");
-        let target = detail
-            .entities
-            .iter()
-            .find(|e| e.id == relation.target_id)
-            .map(|e| e.label.as_str())
-            .unwrap_or("未知");
-        legacy_csv.push_str(&format!(
-            "{},{},{},{},{},{}\n",
-            csv(source),
-            csv(&relation.label),
-            csv(target),
-            csv(&relation.spread),
-            csv(&relation.status),
-            csv(&relation.note)
-        ));
-        edges_csv.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{}\n",
-            csv(&relation.id),
-            csv(&relation.case_id),
-            csv(&relation.source_id),
-            csv(&relation.target_id),
-            csv(&relation.label),
-            csv(&relation.spread),
-            csv(&relation.status),
-            csv(&relation.note),
-            relation.emphasis
-        ));
-    }
-    let mut graphml = String::from("<?xml version='1.0' encoding='UTF-8'?><graphml xmlns='http://graphml.graphdrawing.org/xmlns'><key id='type' for='node' attr.name='type' attr.type='string'/><key id='label' for='all' attr.name='label' attr.type='string'/><key id='status' for='all' attr.name='status' attr.type='string'/><key id='note' for='all' attr.name='note' attr.type='string'/><key id='accent' for='node' attr.name='accent' attr.type='string'/><key id='pinned' for='node' attr.name='pinned' attr.type='boolean'/><key id='emphasis' for='edge' attr.name='emphasis' attr.type='boolean'/><graph id='case' edgedefault='directed'>");
-    for e in &detail.entities {
-        graphml.push_str(&format!("<node id='{}'><data key='type'>{}</data><data key='label'>{}</data><data key='status'>{}</data><data key='note'>{}</data><data key='accent'>{}</data><data key='pinned'>{}</data></node>",xml(&e.id),xml(&e.kind),xml(if e.display_name.trim().is_empty(){&e.label}else{&e.display_name}),xml(&e.status),xml(&e.note),xml(&e.accent),e.pinned));
-    }
-    for r in &detail.relations {
-        graphml.push_str(&format!("<edge id='{}' source='{}' target='{}'><data key='label'>{}</data><data key='status'>{}</data><data key='note'>{}</data><data key='emphasis'>{}</data></edge>",xml(&r.id),xml(&r.source_id),xml(&r.target_id),xml(&r.label),xml(&r.status),xml(&r.note),r.emphasis));
-    }
-    graphml.push_str("</graph></graphml>");
-    let summary_path = dir.join("案件简报.md");
-    let graph_path = dir.join("关系脑图.svg");
-    let data_path = dir.join("全量关系.csv");
-    let package_path = dir.join("案件包.json");
-    let nodes_path = dir.join("nodes.csv");
-    let edges_path = dir.join("edges.csv");
-    let graphml_path = dir.join("关系网络.graphml");
-    fs::write(&summary_path, summary).map_err(|e| e.to_string())?;
-    fs::write(&graph_path, svg).map_err(|e| e.to_string())?;
-    fs::write(&data_path, legacy_csv).map_err(|e| e.to_string())?;
-    fs::write(&nodes_path, nodes_csv).map_err(|e| e.to_string())?;
-    fs::write(&edges_path, edges_csv).map_err(|e| e.to_string())?;
-    fs::write(&graphml_path, graphml).map_err(|e| e.to_string())?;
-    let attachment_export_dir = dir.join("attachments");
-    let attachment_manifest: Vec<_> = detail.attachments.iter().map(|attachment| -> CoreResult<_> {
-        let source = safe_attachment_path(&attachment.relative_path)?;
-        if !source.is_file() { return Err(format!("附件副本缺失：{}", attachment.original_name)); }
-        let file_name = Path::new(&attachment.relative_path).file_name().ok_or("附件路径无效")?;
-        let target = attachment_export_dir.join(file_name);
-        fs::create_dir_all(&attachment_export_dir).map_err(|e| e.to_string())?;
-        fs::copy(&source, &target).map_err(|e| e.to_string())?;
-        Ok(serde_json::json!({"id":attachment.id,"originalName":attachment.original_name,"path":format!("attachments/{}", file_name.to_string_lossy()),"sha256":attachment.sha256,"mimeType":attachment.mime_type,"sizeBytes":attachment.size_bytes,"collectedAt":attachment.collected_at,"note":attachment.note,"entityId":attachment.entity_id,"relationId":attachment.relation_id}))
-    }).collect::<CoreResult<_>>()?;
-    fs::write(
-        dir.join("attachments.json"),
-        serde_json::to_string_pretty(&attachment_manifest).map_err(|e| e.to_string())?,
-    )
-    .map_err(|e| e.to_string())?;
-    let package = CasePackage {
-        format: "clue-workbench-case".into(),
-        version: 1,
-        exported_at: now(),
-        detail: CasePackageDetail::from(&detail),
-    };
-    fs::write(
-        &package_path,
-        serde_json::to_string_pretty(&package).map_err(|e| e.to_string())?,
-    )
-    .map_err(|e| e.to_string())?;
-    let names = [
-        "案件简报.md",
-        "关系脑图.svg",
-        "全量关系.csv",
-        "案件包.json",
-        "nodes.csv",
-        "edges.csv",
-        "关系网络.graphml",
-        "attachments.json",
-    ];
-    let mut files: Vec<_> = names
-        .iter()
-        .map(|name| {
-            let bytes = fs::read(dir.join(name)).map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({"path": name, "sha256": sha256(&bytes)}))
-        })
-        .collect::<CoreResult<_>>()?;
-    for attachment in &detail.attachments {
-        let file_name = Path::new(&attachment.relative_path)
-            .file_name()
-            .ok_or("附件路径无效")?;
-        let relative = format!("attachments/{}", file_name.to_string_lossy());
-        let bytes = fs::read(dir.join(&relative)).map_err(|e| e.to_string())?;
-        files.push(serde_json::json!({"path":relative,"sha256":sha256(&bytes)}));
-    }
-    let manifest = serde_json::json!({"format":"clue-workbench-export","schemaVersion":1,"application":{"name":"clue-workbench","version":env!("CARGO_PKG_VERSION")},"exportedAt":now(),"files":files});
-    fs::write(
-        dir.join("manifest.json"),
-        serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?,
-    )
-    .map_err(|e| e.to_string())?;
-    fs::rename(&dir, &final_dir).map_err(|e| format!("导出完成但无法发布目录：{e}"))?;
-    let conn = open()?;
-    touch(&conn, id, "export_case", "导出高级案件材料")?;
-    Ok(ExportResult {
-        directory: final_dir.display().to_string(),
-        summary_path: final_dir.join("案件简报.md").display().to_string(),
-        graph_path: final_dir.join("关系脑图.svg").display().to_string(),
-        data_path: final_dir.join("全量关系.csv").display().to_string(),
-        package_path: final_dir.join("案件包.json").display().to_string(),
-        xmind_path: String::new(),
-        markdown_path: String::new(),
-        xmind_size_bytes: 0,
-        xmind_generated_at: String::new(),
-    })
+    Ok(portable)
 }
 
 pub fn import_case_package(package_path: &str) -> CoreResult<CaseRecord> {

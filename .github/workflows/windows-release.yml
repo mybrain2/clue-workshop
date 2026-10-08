@@ -1,5 +1,9 @@
 name: windows-release
 
+# 触发器设计定案（0.7.16）：
+# - push(main/release)：发布属于"构建+发布"一次闭环的自动化交付，版本号即人工决策点
+#   （源码变更必须显式升版本号才产生新 Release；纯 CI 修复提交会覆盖同 tag 草稿后重新发布）
+# - workflow_dispatch：保留手动触发兜底（无 PAT 时不可用，见 107 号文档）
 on:
   workflow_dispatch: {}
   push:
@@ -37,6 +41,11 @@ jobs:
       - name: Build frontend + prepare XMind sidecar（生成 node.exe，cargo test 依赖它）
         working-directory: app
         run: npm run build
+
+      - name: Frontend tests (release gate)
+        working-directory: app
+        run: npx vitest run --exclude "src/features/import/real-files-acceptance.test.ts" --exclude "src/features/import/real-ops-scenarios.test.ts" --exclude "src/features/import/zhang-real-files.test.ts" --exclude "src/features/import/direction-v2-acceptance.test.ts" 2>&1 | tee frontend-test.log | tail -40
+        shell: bash
 
       - name: Rust tests
         working-directory: app/src-tauri
@@ -102,19 +111,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh label create ci-failure --color d73a4a 2>/dev/null || true
-          # 判定失败环节：tests 阶段 grep 命中即为测试失败，否则是构建失败
+          # 判定失败环节：前端测试 → Rust tests → 构建，逐级判别
+          # working-directory 为 app/src-tauri，前端日志在上级 app/ 下
+          FAILED_FRONTEND=$(grep -E "Test Files .*failed|FAIL " ../frontend-test.log 2>/dev/null | head -20 || true)
           FAILED_TESTS=$(grep -E "^test .* (FAILED|panicked)|panicked at|test result: FAILED" test-output.log 2>/dev/null | head -60 || true)
-          if [ -n "$FAILED_TESTS" ]; then
+          if [ -n "$FAILED_FRONTEND" ]; then
+            STAGE="Frontend tests (vitest)"
+            FAILED_SUMMARY="$FAILED_FRONTEND"
+            TAIL=$(tail -150 ../frontend-test.log)
+          elif [ -n "$FAILED_TESTS" ]; then
             STAGE="Rust tests"
+            FAILED_SUMMARY="$FAILED_TESTS"
             TAIL=$(tail -150 test-output.log)
           else
             STAGE="Build Tauri (NSIS) / tauri-action"
-            TAIL=$(cat "$GITHUB_WORKSPACE/nsis-diag.txt" 2>/dev/null || echo "诊断文件缺失；Rust tests 全过，失败在构建阶段")
+            FAILED_SUMMARY="(构建阶段失败，双端测试均已通过)"
+            TAIL=$(cat "$GITHUB_WORKSPACE/nsis-diag.txt" 2>/dev/null || echo "诊断文件缺失；双端测试全过，失败在构建阶段")
           fi
           {
             echo "## 失败摘要"
             echo '```'
-            echo "$FAILED_TESTS"
+            echo "$FAILED_SUMMARY"
             echo '```'
             echo "## 日志尾部"
             echo '```'
@@ -123,8 +140,8 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           EXISTING=$(gh issue list --label ci-failure --state open --json number --jq 'length' 2>/dev/null || echo 1)
           if [ "$EXISTING" = "0" ]; then
-            gh issue create --title "CI Windows 失败：${STAGE}（$(date +%Y%m%d-%H%M)）" --label ci-failure --body "$(printf '## 失败阶段：%s\n\`\`\`\n%s\n\`\`\`\n\n## 日志尾部\n\`\`\`\n%s\n\`\`\`\n' "$STAGE" "$FAILED_TESTS" "$TAIL")"
+            gh issue create --title "CI Windows 失败：${STAGE}（$(date +%Y%m%d-%H%M)）" --label ci-failure --body "$(printf '## 失败阶段：%s\n\`\`\`\n%s\n\`\`\`\n\n## 日志尾部\n\`\`\`\n%s\n\`\`\`\n' "$STAGE" "$FAILED_SUMMARY" "$TAIL")"
           else
-            gh issue comment $(gh issue list --label ci-failure --state open --json number --jq '.[0].number') --body "$(printf '## 再次失败（%s · %s）\n\`\`\`\n%s\n\`\`\`\n' "$(date +%Y%m%d-%H%M)" "$STAGE" "$FAILED_TESTS")"
+            gh issue comment $(gh issue list --label ci-failure --state open --json number --jq '.[0].number') --body "$(printf '## 再次失败（%s · %s）\n\`\`\`\n%s\n\`\`\`\n' "$(date +%Y%m%d-%H%M)" "$STAGE" "$FAILED_SUMMARY")"
           fi
           echo "issue 上报完成"

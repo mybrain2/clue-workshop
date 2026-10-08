@@ -1,7 +1,7 @@
 {
   "name": "clue-workbench-desktop",
   "private": true,
-  "version": "0.7.15",
+  "version": "0.7.16",
   "type": "module",
   "dependencies": {
     "@tauri-apps/api": "2.11.1",

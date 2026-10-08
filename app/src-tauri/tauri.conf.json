@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "线索研判",
   "mainBinaryName": "线索研判",
-  "version": "0.7.15",
+  "version": "0.7.16",
   "identifier": "com.clueworkbench.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",

@@ -1,6 +1,6 @@
 [package]
 name = "clue-workbench"
-version = "0.7.15"
+version = "0.7.16"
 default-run = "clue-workbench"
 description = "Local-first case relationship workbench"
 authors = ["Clue Workbench"]
